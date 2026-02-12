@@ -11,7 +11,7 @@ class PRValidator:
 
     def extract_code(self, title):
         """Busca el patrón [CODE:XXXXX] en el título."""
-        match = re.search(r'\[CODE:([a-zA-Z0-9]+)\]', title)
+        match = re.search(r'\[CODE:\s*([a-zA-Z0-9]+)\s*\]', title)
         if match:
             return match.group(1)
         return None
