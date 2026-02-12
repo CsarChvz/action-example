@@ -2,10 +2,17 @@ import os
 import sys
 from validator import PRValidator
 
-def set_action_output(name, value):
-    with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
-        print(f'{name}={value}', file=fh)
+import uuid
 
+def set_action_output(name, value):
+    """Escribe outputs de forma segura para strings multilínea."""
+    with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+        delimiter = f"ghadelimiter_{uuid.uuid4()}"
+        print(f"{name}<<{delimiter}", file=fh)
+        print(value, file=fh)
+        print(delimiter, file=fh)
+
+        
 def main():
     # 1. Variables de entorno
     pr_title = os.getenv('PR_TITLE', '')

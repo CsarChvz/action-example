@@ -10,11 +10,12 @@ class PRValidator:
         self.phone_number = phone_number
 
     def extract_code(self, title):
-        """Busca el patrón [CODE:XXXXX] en el título."""
-        match = re.search(r'\[CODE:\s*([a-zA-Z0-9]+)\s*\]', title)
-        if match:
-            return match.group(1)
-        return None
+            """Busca el patrón [CODE:XXXXX] ignorando espacios internos."""
+            # \s* permite espacios después de los dos puntos o antes del cierre ]
+            match = re.search(r'\[CODE:\s*([a-zA-Z0-9]+)\s*\]', title, re.IGNORECASE)
+            if match:
+                return match.group(1).upper() # Normalizamos a mayúsculas
+            return None
 
     def get_csv_data(self):
         """Descarga el CSV de Google Sheets."""
