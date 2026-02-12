@@ -1,0 +1,49 @@
+name: PR Code Validation
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  contents: read
+  pull-requests: write # Necesario para comentar en el PR
+
+jobs:
+  validate-code:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Validation Script
+        id: python_script
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          GOOGLE_SHEET_URL: ${{ secrets.GOOGLE_SHEET_URL }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          # Agregamos la carpeta scripts al path de python
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/scripts
+          python scripts/validate_pr.py
+
+      - name: Comment on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: code-validation # Identificador único para evitar duplicados
+          message: |
+            ${{ steps.python_script.outputs.message }}
+
+      - name: Fail Workflow if Invalid
+        if: ${{ steps.python_script.outputs.success == 'false' }}
+        run: |
+          echo "La validación del código falló."
+          exit 1
