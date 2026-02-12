@@ -2,11 +2,11 @@ name: PR Code Validation
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, edited, synchronize]
 
 permissions:
   contents: read
-  pull-requests: write # Necesario para comentar en el PR
+  pull-requests: write # Crucial para comentar y cerrar el PR
 
 jobs:
   validate-code:
@@ -15,6 +15,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Initial Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: code-validation
+          message: |
+            ### 🛠 Validando Pull Request
+            - ⏳ Iniciando entorno de ejecución...
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -22,7 +30,8 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; else pip install pandas requests; fi
 
       - name: Run Validation Script
         id: python_script
@@ -30,20 +39,30 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           GOOGLE_SHEET_URL: ${{ secrets.GOOGLE_SHEET_URL }}
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          PHONE_NUMBER: ${{ secrets.PHONE_NUMBER }}
         run: |
-          # Agregamos la carpeta scripts al path de python
           export PYTHONPATH=$PYTHONPATH:$(pwd)/scripts
           python scripts/validate_pr.py
 
-      - name: Comment on PR
+      - name: Final Comment
+        if: always()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          header: code-validation # Identificador único para evitar duplicados
+          header: code-validation
           message: |
+            ### 📊 Resultado de la Validación
             ${{ steps.python_script.outputs.message }}
+
+      # --- LÓGICA DE CIERRE AUTOMÁTICO ---
+      
+      - name: Close PR on Failure
+        if: ${{ steps.python_script.outputs.success == 'false' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Cerrando PR debido a validación fallida..."
+          gh pr close ${{ github.event.pull_request.number }} --comment "Este PR se cerró automáticamente porque el código [CODE:XXXXX] es inválido o no está presente en el título."
 
       - name: Fail Workflow if Invalid
         if: ${{ steps.python_script.outputs.success == 'false' }}
-        run: |
-          echo "La validación del código falló."
-          exit 1
+        run: exit 1
