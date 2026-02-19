@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ============================================================
+    ✏️  ZONA 1 — TÍTULO DE LA PESTAÑA DEL NAVEGADOR
+    Cambia el texto entre <title> y </title>
+  ============================================================ -->
+  <title>Mi Página del Taller</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================================
+      ✏️  ZONA 2 — COLORES PRINCIPALES
+      Cambia los valores de color aquí y toda la página se actualiza
+    ============================================================ */
+    :root {
+      --color-fondo:      #0a0a0f;      /* Color de fondo general        */
+      --color-primario:   #e8ff47;      /* Color de acento / destacados  */
+      --color-texto:      #f0ede6;      /* Color del texto principal      */
+      --color-suave:      #2a2a3a;      /* Color de tarjetas / paneles    */
+      --color-borde:      #2e2e45;      /* Color de bordes                */
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--color-fondo);
+      color: var(--color-texto);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* --- Fondo animado con gradiente --- */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 80% 20%, rgba(232,255,71,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 10% 80%, rgba(100,80,255,0.08) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ---- HEADER ---- */
+    header {
+      position: relative;
+      z-index: 1;
+      padding: 5rem 2rem 4rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .badge {
+      display: inline-block;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-primario);
+      border: 1px solid var(--color-primario);
+      padding: 0.35rem 0.9rem;
+      border-radius: 100px;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards 0.1s;
+    }
+
+    /* ============================================================
+      ✏️  ZONA 3 — NOMBRE Y SUBTÍTULO PRINCIPAL
+      Cambia los textos dentro de h1 y .subtitulo
+    ============================================================ */
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.8rem, 8vw, 6rem);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.25s;
+    }
+
+    h1 em {
+      font-style: normal;
+      color: var(--color-primario);
+    }
+
+    .subtitulo {
+      margin-top: 1.5rem;
+      font-size: 1.15rem;
+      line-height: 1.7;
+      color: rgba(240,237,230,0.6);
+      max-width: 520px;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.4s;
+    }
+
+    /* ---- SECCIÓN DE TARJETAS ---- */
+    .seccion {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 2rem auto 0;
+      padding: 0 2rem 6rem;
+    }
+
+    .seccion-titulo {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(240,237,230,0.35);
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards 0.55s;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+
+    /* ============================================================
+      ✏️  ZONA 4 — LAS TARJETAS DE INFORMACIÓN
+      Edita el contenido de cada .card en el HTML más abajo
+      Puedes agregar más cards copiando el bloque <div class="card">
+    ============================================================ */
+    .card {
+      background: var(--color-suave);
+      border: 1px solid var(--color-borde);
+      border-radius: 16px;
+      padding: 1.8rem;
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+      cursor: default;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--color-primario);
+      box-shadow: 0 0 30px rgba(232,255,71,0.08);
+    }
+
+    .card-icon {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-titulo {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+
+    .card-texto {
+      font-size: 0.9rem;
+      line-height: 1.65;
+      color: rgba(240,237,230,0.55);
+    }
+
+    /* ---- SECCIÓN CONTADOR ---- */
+    .contador-seccion {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 2rem 6rem;
+    }
+
+    .contador-box {
+      background: var(--color-suave);
+      border: 1px solid var(--color-borde);
+      border-radius: 20px;
+      padding: 2.5rem;
+      text-align: center;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards 0.9s;
+    }
+
+    /* ============================================================
+      ✏️  ZONA 5 — TEXTO DEL CONTADOR
+      Cambia el label debajo del número
+    ============================================================ */
+    .contador-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(240,237,230,0.4);
+      margin-bottom: 0.8rem;
+    }
+
+    .contador-numero {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(3rem, 10vw, 6rem);
+      font-weight: 800;
+      color: var(--color-primario);
+      line-height: 1;
+      margin-bottom: 1.2rem;
+    }
+
+    .contador-descripcion {
+      font-size: 0.9rem;
+      color: rgba(240,237,230,0.5);
+      margin-bottom: 1.8rem;
+    }
+
+    .btn-grupo {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 0.7rem 1.6rem;
+      border-radius: 100px;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      letter-spacing: 0.05em;
+    }
+
+    .btn:active { transform: scale(0.96); }
+
+    .btn-primario {
+      background: var(--color-primario);
+      color: #0a0a0f;
+    }
+
+    .btn-primario:hover {
+      box-shadow: 0 0 20px rgba(232,255,71,0.35);
+      opacity: 0.9;
+    }
+
+    .btn-secundario {
+      background: transparent;
+      color: var(--color-texto);
+      border: 1px solid var(--color-borde);
+    }
+
+    .btn-secundario:hover {
+      border-color: var(--color-texto);
+    }
+
+    /* ---- FOOTER ---- */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.78rem;
+      color: rgba(240,237,230,0.2);
+      border-top: 1px solid var(--color-borde);
+    }
+
+    /* ============================================================
+      ✏️  ZONA 6 — TEXTO DEL FOOTER
+      Edita el contenido del <footer> más abajo en el HTML
+    ============================================================ */
+
+    /* ---- ANIMACIONES ---- */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card:nth-child(1) { animation-delay: 0.6s; }
+    .card:nth-child(2) { animation-delay: 0.72s; }
+    .card:nth-child(3) { animation-delay: 0.84s; }
+    .card:nth-child(4) { animation-delay: 0.96s; }
+
+    /* ---- TOAST de notificación ---- */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--color-primario);
+      color: #0a0a0f;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 0.9rem 1.5rem;
+      border-radius: 12px;
+      z-index: 999;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <!-- ✏️ Cambia el texto del badge -->
+    <div class="badge">✦ Taller DevOps · GitHub Actions · AWS S3</div>
+
+    <h1>
+      <!-- ✏️ Cambia estas dos líneas con tu nombre -->
+      Hola, soy<br>
+      <em>Tu Nombre Aquí</em>
+    </h1>
+
+    <!-- ✏️ Cambia este párrafo con una descripción tuya -->
+    <p class="subtitulo">
+      Esta página fue desplegada automáticamente en AWS S3
+      usando GitHub Actions. Cambia este texto, haz push y
+      verás la magia en segundos.
+    </p>
+  </header>
+
+  <!-- TARJETAS -->
+  <section class="seccion">
+    <p class="seccion-titulo">✦ Sobre mí</p>
+
+    <div class="grid">
+
+      <!-- ✏️ TARJETA 1 — Edita ícono, título y texto -->
+      <div class="card">
+        <div class="card-icon">🚀</div>
+        <div class="card-titulo">Mi Rol</div>
+        <p class="card-texto">
+          Escribe aquí tu rol o puesto. Por ejemplo:
+          Desarrollador Backend, estudiante de ingeniería, etc.
+        </p>
+      </div>
+
+      <!-- ✏️ TARJETA 2 — Edita ícono, título y texto -->
+      <div class="card">
+        <div class="card-icon">💻</div>
+        <div class="card-titulo">Mi Stack</div>
+        <p class="card-texto">
+          Lista las tecnologías que usas o estás aprendiendo.
+          Python, JavaScript, AWS, Docker, lo que sea.
+        </p>
+      </div>
+
+      <!-- ✏️ TARJETA 3 — Edita ícono, título y texto -->
+      <div class="card">
+        <div class="card-icon">🎯</div>
+        <div class="card-titulo">Mi Meta</div>
+        <p class="card-texto">
+          ¿Qué quieres aprender o lograr este año?
+          Escribe tu objetivo aquí.
+        </p>
+      </div>
+
+      <!-- ✏️ TARJETA 4 — Edita ícono, título y texto -->
+      <div class="card">
+        <div class="card-icon">🌎</div>
+        <div class="card-titulo">Dato Curioso</div>
+        <p class="card-texto">
+          Un dato divertido o curioso sobre ti.
+          ¡Sé creativo!
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CONTADOR INTERACTIVO -->
+  <section class="contador-seccion">
+    <div class="contador-box">
+      <p class="contador-label">✦ Interactivo</p>
+
+      <!-- El número se actualiza con JS -->
+      <div class="contador-numero" id="contador">0</div>
+
+      <!-- ✏️ Cambia esta descripción -->
+      <p class="contador-descripcion">
+        veces que has hecho push hoy
+        <br><span style="font-size:0.8em; opacity:0.6">(o las que quieras contar)</span>
+      </p>
+
+      <div class="btn-grupo">
+        <!-- ✏️ Puedes cambiar el texto de los botones -->
+        <button class="btn btn-primario" onclick="sumar()">+ Sumar</button>
+        <button class="btn btn-secundario" onclick="resetear()">Resetear</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <!-- ✏️ Cambia el texto del footer con tu nombre y rama -->
+    Desplegado por <strong>Tu Nombre</strong> ·
+    Rama: <strong>feature/tu-nombre</strong> ·
+    Taller DevOps 2025
+  </footer>
+
+  <!-- TOAST de notificación -->
+  <div class="toast" id="toast">¡+1! 🚀</div>
+
+  <!-- ============================================================
+    ✏️  ZONA 7 — JAVASCRIPT
+    Aquí puedes modificar la lógica del contador o agregar
+    tus propias funciones
+  ============================================================ -->
+  <script>
+    // Variable que guarda el conteo
+    let conteo = 0;
+
+    // Función que suma 1 al contador
+    function sumar() {
+      conteo++;
+      document.getElementById('contador').textContent = conteo;
+      mostrarToast('¡+1! 🚀');
+
+      // ✏️ Cambia el color del número según el valor
+      const el = document.getElementById('contador');
+      if (conteo >= 10) {
+        el.style.color = '#ff6b6b'; // rojo si llegas a 10
+      } else {
+        el.style.color = 'var(--color-primario)';
+      }
+    }
+
+    // Función que reinicia el contador a 0
+    function resetear() {
+      conteo = 0;
+      document.getElementById('contador').textContent = '0';
+      document.getElementById('contador').style.color = 'var(--color-primario)';
+      mostrarToast('Reseteado ↺');
+    }
+
+    // Muestra el toast de notificación
+    function mostrarToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    // ✏️ ¿Quieres agregar más funciones? Escríbelas aquí abajo
+  </script>
+
+</body>
+</html>

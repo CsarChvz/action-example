@@ -1,0 +1,177 @@
+name: Deploy Branch to S3
+
+# ------------------------------------------------------------
+# TRIGGER: Se dispara en push a cualquier rama excepto 'main'
+# ------------------------------------------------------------
+on:
+  push:
+    branches-ignore:
+      - main
+
+# ------------------------------------------------------------
+# Variables de entorno globales reutilizables en todos los steps
+# ------------------------------------------------------------
+env:
+  AWS_REGION: us-east-1
+  # Normalizamos el nombre de la rama: convertimos "/" y "_" a "-"
+  # y forzamos minúsculas para cumplir las reglas de nombres de S3
+  BUCKET_NAME: taller-dev-${{ github.ref_name }}
+
+jobs:
+  deploy:
+    name: Deploy ${{ github.ref_name }} → S3
+    runs-on: ubuntu-latest
+
+    steps:
+      # ----------------------------------------------------------
+      # STEP 1: Checkout del código fuente
+      # ----------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------
+      # STEP 2: Configurar credenciales de AWS desde GitHub Secrets
+      # ----------------------------------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      # ----------------------------------------------------------
+      # STEP 3: Normalizar el nombre del bucket
+      # S3 no permite mayúsculas ni algunos caracteres especiales
+      # ----------------------------------------------------------
+      - name: Sanitize bucket name
+        id: bucket
+        run: |
+          # Convertir a minúsculas y reemplazar "/" y "_" por "-"
+          RAW_NAME="taller-dev-${{ github.ref_name }}"
+          SAFE_NAME=$(echo "$RAW_NAME" | tr '[:upper:]' '[:lower:]' | tr '/_' '-')
+          echo "name=$SAFE_NAME" >> $GITHUB_OUTPUT
+          echo "✅ Bucket name: $SAFE_NAME"
+
+      # ----------------------------------------------------------
+      # STEP 4: Crear el bucket S3 si no existe
+      # ----------------------------------------------------------
+      - name: Create S3 bucket if not exists
+        run: |
+          BUCKET="${{ steps.bucket.outputs.name }}"
+
+          # Verificamos la existencia del bucket con head-bucket
+          if aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
+            echo "ℹ️  El bucket '$BUCKET' ya existe. Saltando creación."
+          else
+            echo "🪣  Creando bucket '$BUCKET'..."
+            # us-east-1 NO lleva LocationConstraint (quirk de AWS)
+            if [ "${{ env.AWS_REGION }}" = "us-east-1" ]; then
+              aws s3api create-bucket --bucket "$BUCKET" --region us-east-1
+            else
+              aws s3api create-bucket \
+                --bucket "$BUCKET" \
+                --region "${{ env.AWS_REGION }}" \
+                --create-bucket-configuration LocationConstraint="${{ env.AWS_REGION }}"
+            fi
+            echo "✅ Bucket creado exitosamente."
+          fi
+
+      # ----------------------------------------------------------
+      # STEP 5: Desactivar Block Public Access
+      # Necesario antes de aplicar bucket policies públicas
+      # ----------------------------------------------------------
+      - name: Disable Block Public Access
+        run: |
+          BUCKET="${{ steps.bucket.outputs.name }}"
+          echo "🔓 Desactivando Block Public Access en '$BUCKET'..."
+          aws s3api put-public-access-block \
+            --bucket "$BUCKET" \
+            --public-access-block-configuration \
+              "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false"
+          echo "✅ Block Public Access desactivado."
+
+      # ----------------------------------------------------------
+      # STEP 6: Aplicar Bucket Policy para lectura pública (GetObject)
+      # ----------------------------------------------------------
+      - name: Apply public read bucket policy
+        run: |
+          BUCKET="${{ steps.bucket.outputs.name }}"
+          echo "📋 Aplicando Bucket Policy de lectura pública..."
+
+          # Generamos el JSON de la policy con heredoc
+          POLICY=$(cat <<EOF
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "PublicReadGetObject",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::${BUCKET}/*"
+              }
+            ]
+          }
+          EOF
+          )
+
+          aws s3api put-bucket-policy \
+            --bucket "$BUCKET" \
+            --policy "$POLICY"
+          echo "✅ Bucket Policy aplicada."
+
+      # ----------------------------------------------------------
+      # STEP 7: Configurar Static Website Hosting
+      # ----------------------------------------------------------
+      - name: Enable Static Website Hosting
+        run: |
+          BUCKET="${{ steps.bucket.outputs.name }}"
+          echo "🌐 Configurando Static Website Hosting..."
+          aws s3api put-bucket-website \
+            --bucket "$BUCKET" \
+            --website-configuration '{
+              "IndexDocument": {"Suffix": "index.html"},
+              "ErrorDocument": {"Key": "error.html"}
+            }'
+          echo "✅ Static Website Hosting habilitado."
+
+      # ----------------------------------------------------------
+      # STEP 8: Sincronizar archivos al bucket
+      # ----------------------------------------------------------
+      - name: Sync files to S3
+        run: |
+          BUCKET="${{ steps.bucket.outputs.name }}"
+          echo "🚀 Sincronizando archivos hacia s3://$BUCKET ..."
+
+          aws s3 sync . "s3://$BUCKET" \
+            --exclude ".git/*" \
+            --exclude ".github/*" \
+            --exclude "*.md" \
+            --delete \
+            --cache-control "max-age=60"
+
+          echo "✅ Sincronización completada."
+
+      # ----------------------------------------------------------
+      # STEP 9: Imprimir URL final del despliegue
+      # ----------------------------------------------------------
+      - name: Print deployment URL
+        run: |
+          BUCKET="${{ steps.bucket.outputs.name }}"
+          REGION="${{ env.AWS_REGION }}"
+
+          # us-east-1 usa un formato de URL distinto al resto de regiones
+          if [ "$REGION" = "us-east-1" ]; then
+            URL="http://${BUCKET}.s3-website-${REGION}.amazonaws.com"
+          else
+            URL="http://${BUCKET}.s3-website.${REGION}.amazonaws.com"
+          fi
+
+          echo "=============================================="
+          echo "🌍 DEPLOYMENT URL:"
+          echo "   $URL"
+          echo "=============================================="
+
+          # También lo exponemos como output del job para otros workflows
+          echo "deployment_url=$URL" >> $GITHUB_OUTPUT
+        id: url_output
